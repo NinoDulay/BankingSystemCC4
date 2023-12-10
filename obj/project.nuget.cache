@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "4MVBXMaAPz5809iEb4KERGMfkyNjbXBoZkItaQuw3xXbwruOC2Vlf6FS7f4YtHLaT1UQohzPv75zXcAYa+kmEA==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\altis\\Documents\\MAJOR\\CC4 System\\BankingSystem\\BankingSystem.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\altis\\.nuget\\packages\\csvhelper\\30.0.1\\csvhelper.30.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}

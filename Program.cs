@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Globalization;
-using CsvHelper;
-using CsvHelper.Configuration;
-using System.Text;
+using System.Collections.Generic;
 
 public class BankAccount{
     public string bank_account_num {get; set;}
@@ -14,63 +12,195 @@ public class BankAccount{
 }
 
 public class Program{
-    static void ReadCSVFile(string filename){
-        // https://www.youtube.com/watch?v=3mjJPptpjw4
-        var lines = File.ReadAllLines(filename);
-        foreach (var line in lines){
-            String[] data = line.Split(";");
-            Console.WriteLine(data[0]);
-            Console.WriteLine(data[1]);
-            Console.WriteLine(data[2]);
-            Console.WriteLine(data[3]);
-            Console.WriteLine(data[4]);
-            Console.WriteLine(data[5]);
-            Console.WriteLine("-------------------------");
+    // Create empty linked lists for bank accounts and transactions
+    static LinkedList<String[]> bank_accounts = new LinkedList<String[]>();
+    static LinkedList<String[]> transactions = new LinkedList<String[]>();
+
+    // Create an empty linkedlistnode to store the logged in user.
+    static LinkedListNode<String[]> current_user = null;
+
+    // Check for username and password in the bank_accounts.
+    private static void SetCurrentUser(string[] data){
+        for (LinkedListNode<string[]> node = bank_accounts.First; node != null; node=node.Next){
+            if (node.Value == data){
+                current_user = node;
+                break;
+            }
         }
     }
 
-    static void Login(string username, string password){
-
+    static bool IsAccountExisting(string username){
+        int uname_index = 5;
+        foreach(String[] data in bank_accounts){
+            if (data[uname_index] == username){
+                return true;
+            }
+        }
+        return false;
     }
 
-    static void Register(string bank_num, string first, string last, string address, double deposit, string password){
-        string line = $"{bank_num};{first};{last};{address};{deposit};{password};\n";
-        File.AppendAllText("users.csv", line);
+    static bool Login(string username, string password){ 
+        int uname_index = 5;
+        int pword_index = 6;
+
+        foreach(String[] data in bank_accounts){
+            if (data[uname_index] == username){
+                if (data[pword_index] == password){
+                    SetCurrentUser(data);
+                    Console.WriteLine($"Login Success!");
+                    return true;
+                } 
+            }
+        }
+        return false;
+    }
+
+    
+    static bool Register(string bank_num, string first, string last, string address, double deposit, string username, string password){
+        String[] bank_acc = {bank_num, first, last, address, deposit.ToString(), username, password};
+
+        if (IsAccountExisting(username)){
+            return false;
+        }
+
+        bank_accounts.AddLast(bank_acc);
+        return true;
+    }
+
+    static void TransactionCreationWithdraw(string prev_bal, double amt_withdrawn){
+        string datestr = DateTime.Now.ToString("dddd, MMMM dd, yyyy - hh:mm:ss tt");
+        string[] trans = {current_user.Value[0], "Withdraw", datestr, prev_bal, amt_withdrawn.ToString(), current_user.Value[4]};
+        transactions.AddLast(trans);
+    }
+
+    static void TransactionCreationDeposit(string prev_bal, double amt_deposited){
+        string datestr = DateTime.Now.ToString("dddd, MMMM dd, yyyy - hh:mm:ss tt");
+        string[] trans = {current_user.Value[0], "Deposit", datestr, prev_bal, amt_deposited.ToString(), current_user.Value[4]};
+        transactions.AddLast(trans);
+    }
+
+    static void ShowTransaction(){
+        Console.WriteLine($"Bank Account: {current_user.Value[0]}");
+        Console.WriteLine("");
+        foreach(String[] data in transactions){
+            if (data[0] == current_user.Value[0]){
+                Console.WriteLine($"---------------------");
+                Console.WriteLine($"{data[1]} - {data[2]}");
+                Console.WriteLine($"---------------------");
+                Console.WriteLine($"Prev Balance: {data[3]}");
+                if(data[1] == "Withdraw"){
+                    Console.WriteLine($"Withdraw Amt: {data[4]}");
+                } else {
+                    Console.WriteLine($"Deposit Amt: {data[4]}");
+                }
+                Console.WriteLine($"Current Balance: {data[5]}");
+                Console.WriteLine($"---------------------");
+                Console.WriteLine($"");
+            }   
+        }
+    }
+
+    static void LoggedInSystem(){
+        string user_choice;
+
+        while (true){
+            Console.WriteLine($"Good day, {current_user.Value[1]}!");
+            Console.WriteLine("What do you want to do:");
+            Console.WriteLine("1. Check Balance");
+            Console.WriteLine("2. Withdraw");
+            Console.WriteLine("3. Deposit");
+            Console.WriteLine("4. Transfer Funds");
+            Console.WriteLine("5. See Transaction");
+            Console.WriteLine("6. Logout");
+            Console.WriteLine("");
+            Console.Write(">>> ");
+            user_choice = Console.ReadLine();
+
+            if (user_choice == "1"){
+                Console.WriteLine("");
+                Console.WriteLine($"Current Balance: Php {current_user.Value[4]}");
+                Console.WriteLine("");
+            } else if (user_choice == "2"){
+                string withdraw_amt;
+                double withdraw_converted;
+                Console.WriteLine("");
+
+                Console.Write($"How much do you want to withdraw: ");
+                withdraw_amt = Console.ReadLine();
+
+                if(!Double.TryParse(withdraw_amt, out withdraw_converted)){
+                    Console.WriteLine("Please enter a valid amount.");
+                } else{
+                    if (withdraw_converted < 0 || withdraw_converted > Double.Parse(current_user.Value[4])){
+                        Console.WriteLine("Invalid Value, please try again.");
+                    } else {
+                        Console.WriteLine($"Successfully withdrawn Php {withdraw_amt}");
+                        string prev_bal = current_user.Value[4];
+                        current_user.Value[4] =  (Double.Parse(current_user.Value[4]) - withdraw_converted).ToString();
+                        TransactionCreationWithdraw(prev_bal, withdraw_converted);
+                    } 
+                    
+                }
+                Console.WriteLine("");
+            } else if (user_choice == "3"){
+                string deposit_amt;
+                double deposit_converted;
+                Console.WriteLine("");
+                Console.WriteLine($"How much do you want to deposit: ");
+
+                deposit_amt = Console.ReadLine();
+                if(!Double.TryParse(deposit_amt, out deposit_converted)){
+                    Console.Write("Please enter a valid amount.");
+                } else{
+                    Console.WriteLine(deposit_converted);
+                    if (deposit_converted <= 0){
+                        Console.WriteLine("Invalid Value, please try again.");
+                    } else {
+                        Console.WriteLine($"Successfully deposited Php {deposit_converted}");
+                        string prev_bal = current_user.Value[4];
+                        current_user.Value[4] =  (Double.Parse(current_user.Value[4]) - deposit_converted).ToString();
+                        TransactionCreationDeposit(prev_bal, deposit_converted);
+                    } 
+                }
+                Console.WriteLine("");
+            } else if (user_choice == "5"){
+                Console.WriteLine("");
+                ShowTransaction();
+                Console.WriteLine("");
+            } else if(user_choice == "6"){
+                Console.WriteLine("Thank you for using our system!");
+                Console.WriteLine("");
+                break;
+            }
+        }
+        
+    }
+
+    // Add a New Bank Account on the bank_accounts linkedlist
+    
+    static void SeeRegisteredAccounts(){
+        foreach(String[] data in bank_accounts){
+            Console.WriteLine($"-------------------------");
+            Console.WriteLine($"ACC NUM: {data[0]}");
+            Console.WriteLine($"-------------------------");
+            Console.WriteLine($"First: {data[1]}");
+            Console.WriteLine($"Last: {data[2]}");
+            Console.WriteLine($"Address: {data[3]}");
+            Console.WriteLine($"Balance: {data[4]}");
+            Console.WriteLine($"Username: {data[5]}");
+            Console.WriteLine($"Password: {data[6]}");
+            Console.WriteLine();
+        }
     }
 
 
     public static void Main(string[] args){
-        // ReadCSVFile("users.csv");
+        Register("1230120313012", "Nino", "Dulay", "106 Ricabo St. Zamora, Meycauayan, Bulacan", 12312312, "HoaxSnowden", "Password123");
+        Register("1230120313052", "Loy", "Bayhon", "Northville 3, Bayugo, Meycauayan, Bulacan", 12000, "Loyloy", "Password3!@#");
 
-        // Register("1230120313012", "Nino", "Dulay", "106 Ricabo St. Zamora, Meycauayan, Bulacan", 12312312, "Password123");
-        // Register("1230120313052", "Loy", "Bayhon", "Northville 3, Bayugo, Meycauayan, Bulacan", 12000, "Password3!@#");
-        // var csvConfig = new CsvConfiguration(CultureInfo.CurrentCulture)
-        // {
-        //     HasHeaderRecord = false,
-        //     Delimiter = ";",
-        // };
-
-        // using var streamReader = File.OpenText("users.csv");
-        // using var csvReader = new CsvReader(streamReader, csvConfig);
-
-        // string value;
-
-        // while (csvReader.Read())
-        // {
-        //     Console.WriteLine("------------------------");
-        //     for (int i = 0; csvReader.TryGetField<string>(i, out value); i++)
-        //     {
-        //         Console.WriteLine($"{value}");
-        //     }
-        //     Console.WriteLine("------------------------");
-        // }
+        SeeRegisteredAccounts();
 
 
-        // Comma Separated Values
-
-
-
-        
         Console.WriteLine("Welcome to Group 2 Banking System!");
         while(true){
             Console.WriteLine("What do you want to do?");
@@ -93,6 +223,20 @@ public class Program{
 
                     Console.Write("Password: ");
                     password = Console.ReadLine();
+
+                    if(IsAccountExisting(username)){
+                        if(Login(username, password)){
+                            Console.WriteLine("");
+                            Console.WriteLine("");
+                            LoggedInSystem();
+                            break;
+                        } else {
+                            Console.WriteLine("Password is not correct.");
+                        }
+                    } else{
+                        Console.WriteLine("Username does not exist in the database.");
+                    }
+                    
                 }
             } else if(user_choice == "2"){
                 string firstname;
@@ -100,8 +244,10 @@ public class Program{
                 string address;
                 string initial_deposit;
                 double initial_deposit_converted;
+                string username;
                 string password;
                 string confirm_password;
+
                 while(true){
                     Console.Write("First Name: ");
                     firstname = Console.ReadLine();
@@ -122,6 +268,8 @@ public class Program{
                         }
                     }
                     
+                    Console.Write("Username: ");
+                    username = Console.ReadLine();
 
                     while(true){
                         Console.Write("Password: ");
@@ -142,21 +290,28 @@ public class Program{
                     Console.WriteLine($"Name: {firstname} {lastname}");
                     Console.WriteLine($"Address: {address}");
                     Console.WriteLine($"Initial Deposit: Php {initial_deposit} ");
+                    Console.WriteLine($"Username: {username}");
                     Console.WriteLine($"Password: {password}");
                     
                     Console.Write("\nIs your Information correct (Y/N)?");
                     string yesorno = Console.ReadLine();
                     if(yesorno.ToUpper() == "Y"){
                         string date = DateTime.Now.ToString("yyyyMMddHHmmss");
-                        Console.WriteLine($"\n\nYour Bank Account Number: {date}");
-                        Console.WriteLine("Registration Successful.\n\n");
-                        Register(date, firstname, lastname, address, initial_deposit_converted, password);
-                        break;
+                        if(Register(date, firstname, lastname, address, initial_deposit_converted, username, password)){
+                            Console.WriteLine($"\n\nYour Bank Account Number: {date}");
+                            Console.WriteLine("Registration Successful.\n\n");
+                            break;
+                        } else {
+                            Console.WriteLine($"Username already exists in the database.");
+                            continue;
+                        }
                     } else if(yesorno.ToUpper() == "N"){
                         continue;
                     }
                 }
                
+            } else if(user_choice == "3"){
+                Console.Write("See you!");
             }
 
         }

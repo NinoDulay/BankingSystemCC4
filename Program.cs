@@ -32,7 +32,7 @@ public class Program{
     static bool IsAccountExisting(string username){
         int uname_index = 5;
         foreach(String[] data in bank_accounts){
-            if (data[uname_index] == username){
+            if (data[uname_index] == username || data[0] == username){
                 return true;
             }
         }
@@ -59,12 +59,12 @@ public class Program{
     static bool Register(string bank_num, string first, string last, string address, double deposit, string username, string password){
         String[] bank_acc = {bank_num, first, last, address, deposit.ToString(), username, password};
 
-        if (IsAccountExisting(username)){
-            return false;
-        }
-
         bank_accounts.AddLast(bank_acc);
         return true;
+    }
+
+    static bool TransferFunds(string recipient, double transfer_amt){
+
     }
 
     static void TransactionCreationWithdraw(string prev_bal, double amt_withdrawn){
@@ -79,6 +79,22 @@ public class Program{
         transactions.AddLast(trans);
     }
 
+    static string NumToName(string bank_num){
+        string name = "";
+        foreach(String[] data in bank_accounts){
+            if (data[0] == bank_num){
+                name = $"{data[1]} {data[2]}";
+            }
+        }
+        return name;
+    }
+
+    static void TransactionCreationTransfer(string prev_bal, string recipient, double amt_transferred){
+        string datestr = DateTime.Now.ToString("dddd, MMMM dd, yyyy - hh:mm:ss tt");
+        string[] trans = {current_user.Value[0], "Transfer", datestr, recipient, NumToName(recipient), prev_bal, amt_transferred.ToString(), current_user.Value[4]};
+        transactions.AddLast(trans);
+    }
+
     static void ShowTransaction(){
         Console.WriteLine($"Bank Account: {current_user.Value[0]}");
         Console.WriteLine("");
@@ -87,16 +103,26 @@ public class Program{
                 Console.WriteLine($"---------------------");
                 Console.WriteLine($"{data[1]} - {data[2]}");
                 Console.WriteLine($"---------------------");
-                Console.WriteLine($"Prev Balance: {data[3]}");
+                
                 if(data[1] == "Withdraw"){
+                    Console.WriteLine($"Prev Balance: {data[3]}");
                     Console.WriteLine($"Withdraw Amt: {data[4]}");
-                } else {
+                    Console.WriteLine($"Current Balance: {data[5]}");
+                } else if(data[1] == "Deposit"){
+                    Console.WriteLine($"Prev Balance: {data[3]}");
                     Console.WriteLine($"Deposit Amt: {data[4]}");
+                    Console.WriteLine($"Current Balance: {data[5]}");
+                } else{
+                    Console.WriteLine($"Recipient Account: {data[3]}");
+                    Console.WriteLine($"Recipient Name: {data[4]}");
+                    Console.WriteLine($"Prev Balance: {data[5]}");
+                    Console.WriteLine($"Transfer Amt: {data[6]}");
+                    Console.WriteLine($"Current Balance: {data[7]}");
                 }
-                Console.WriteLine($"Current Balance: {data[5]}");
+                
                 Console.WriteLine($"---------------------");
                 Console.WriteLine($"");
-            }   
+            }
         }
     }
 
@@ -110,7 +136,7 @@ public class Program{
             Console.WriteLine("2. Withdraw");
             Console.WriteLine("3. Deposit");
             Console.WriteLine("4. Transfer Funds");
-            Console.WriteLine("5. See Transaction");
+            Console.WriteLine("5. See Transactions");
             Console.WriteLine("6. Logout");
             Console.WriteLine("");
             Console.Write(">>> ");
@@ -163,6 +189,37 @@ public class Program{
                     } 
                 }
                 Console.WriteLine("");
+
+            } else if (user_choice == "4"){
+                double transfer_amt_converted;
+
+                Console.Write("Enter recipient's number: ");
+                string recipient = Console.ReadLine();
+
+                if(!IsAccountExisting(recipient)){
+                    Console.WriteLine("Account does not exist. Going back to menu.");
+                    continue;
+                }
+
+                Console.Write("Enter transfer amount: ");
+                string transfer_amt = Console.ReadLine();
+
+                if(!Double.TryParse(transfer_amt, out transfer_amt_converted)){
+                    Console.WriteLine("Please enter a valid amount. Going back to menu.");
+                } else{
+                    if (transfer_amt_converted < 0 || transfer_amt_converted > Double.Parse(current_user.Value[4])){
+                        Console.WriteLine("Invalid Value, please try again.");
+                    } else {
+                        ///// CHECK WHO IS THE RECIPIENT
+                        //////// add amt to recipient if valid amt
+                        Console.WriteLine($"Successfully transfered Php {transfer_amt_converted}");
+                        Console.WriteLine($"Recipient: {recipient}");
+                        string prev_bal = current_user.Value[4];
+                        current_user.Value[4] =  (Double.Parse(current_user.Value[4]) - transfer_amt_converted).ToString();
+                        TransactionCreationTransfer(prev_bal, recipient, transfer_amt_converted);
+                    }
+                }
+
             } else if (user_choice == "5"){
                 Console.WriteLine("");
                 ShowTransaction();

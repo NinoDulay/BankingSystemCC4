@@ -2,14 +2,6 @@
 using System.Globalization;
 using System.Collections.Generic;
 
-public class BankAccount{
-    public string bank_account_num {get; set;}
-    public string first {get; set;}
-    public string last {get; set;}
-    public string address {get; set;}
-    public double balance {get; set;}
-    public string password {get; set;}
-}
 
 public class Program{
     // Create empty linked lists for bank accounts and transactions
@@ -63,8 +55,16 @@ public class Program{
         return true;
     }
 
-    static bool TransferFunds(string recipient, double transfer_amt){
-
+    static bool TransferFunds(string sender, string recipient, double transfer_amt){
+        for (LinkedListNode<string[]> node = bank_accounts.First; node != null; node=node.Next){
+            if (node.Value[0] == recipient){
+                string prev_bal = node.Value[4];
+                node.Value[4] = (Double.Parse(prev_bal) + transfer_amt).ToString();
+                TransactionCreationReceive(recipient, prev_bal, sender, transfer_amt, Double.Parse(node.Value[4]));
+                return true;
+            }
+        }
+        return false;
     }
 
     static void TransactionCreationWithdraw(string prev_bal, double amt_withdrawn){
@@ -95,6 +95,12 @@ public class Program{
         transactions.AddLast(trans);
     }
 
+    static void TransactionCreationReceive(string recipient, string prev_bal, string sender, double amt_transferred, double new_recipient_bal){
+        string datestr = DateTime.Now.ToString("dddd, MMMM dd, yyyy - hh:mm:ss tt");
+        string[] trans = {recipient, "Received", datestr, sender, NumToName(sender), prev_bal, amt_transferred.ToString(), new_recipient_bal.ToString()};
+        transactions.AddLast(trans);
+    }
+
     static void ShowTransaction(){
         Console.WriteLine($"Bank Account: {current_user.Value[0]}");
         Console.WriteLine("");
@@ -112,13 +118,20 @@ public class Program{
                     Console.WriteLine($"Prev Balance: {data[3]}");
                     Console.WriteLine($"Deposit Amt: {data[4]}");
                     Console.WriteLine($"Current Balance: {data[5]}");
-                } else{
+                } else if(data[1] == "Transfer"){
                     Console.WriteLine($"Recipient Account: {data[3]}");
                     Console.WriteLine($"Recipient Name: {data[4]}");
                     Console.WriteLine($"Prev Balance: {data[5]}");
                     Console.WriteLine($"Transfer Amt: {data[6]}");
                     Console.WriteLine($"Current Balance: {data[7]}");
+                } else if(data[1] == "Received"){
+                    Console.WriteLine($"Sender Account: {data[3]}");
+                    Console.WriteLine($"Sender Name: {data[4]}");
+                    Console.WriteLine($"Prev Balance: {data[5]}");
+                    Console.WriteLine($"Transfer Amt: {data[6]}");
+                    Console.WriteLine($"Current Balance: {data[7]}");
                 }
+                
                 
                 Console.WriteLine($"---------------------");
                 Console.WriteLine($"");
@@ -172,19 +185,18 @@ public class Program{
                 string deposit_amt;
                 double deposit_converted;
                 Console.WriteLine("");
-                Console.WriteLine($"How much do you want to deposit: ");
+                Console.Write($"How much do you want to deposit: ");
 
                 deposit_amt = Console.ReadLine();
                 if(!Double.TryParse(deposit_amt, out deposit_converted)){
                     Console.Write("Please enter a valid amount.");
                 } else{
-                    Console.WriteLine(deposit_converted);
                     if (deposit_converted <= 0){
                         Console.WriteLine("Invalid Value, please try again.");
                     } else {
                         Console.WriteLine($"Successfully deposited Php {deposit_converted}");
                         string prev_bal = current_user.Value[4];
-                        current_user.Value[4] =  (Double.Parse(current_user.Value[4]) - deposit_converted).ToString();
+                        current_user.Value[4] =  (Double.Parse(current_user.Value[4]) + deposit_converted).ToString();
                         TransactionCreationDeposit(prev_bal, deposit_converted);
                     } 
                 }
@@ -210,13 +222,13 @@ public class Program{
                     if (transfer_amt_converted < 0 || transfer_amt_converted > Double.Parse(current_user.Value[4])){
                         Console.WriteLine("Invalid Value, please try again.");
                     } else {
-                        ///// CHECK WHO IS THE RECIPIENT
-                        //////// add amt to recipient if valid amt
                         Console.WriteLine($"Successfully transfered Php {transfer_amt_converted}");
                         Console.WriteLine($"Recipient: {recipient}");
                         string prev_bal = current_user.Value[4];
                         current_user.Value[4] =  (Double.Parse(current_user.Value[4]) - transfer_amt_converted).ToString();
                         TransactionCreationTransfer(prev_bal, recipient, transfer_amt_converted);
+                        TransferFunds(current_user.Value[0], recipient, transfer_amt_converted);
+                        Console.WriteLine($"Recipient Name: {NumToName(recipient)}\n\n");
                     }
                 }
 
@@ -252,7 +264,7 @@ public class Program{
 
 
     public static void Main(string[] args){
-        Register("1230120313012", "Nino", "Dulay", "106 Ricabo St. Zamora, Meycauayan, Bulacan", 12312312, "HoaxSnowden", "Password123");
+        Register("1230120313012", "Nino", "Dulay", "106 Ricabo St. Zamora, Meycauayan, Bulacan", 15000, "HoaxSnowden", "Password123");
         Register("1230120313052", "Loy", "Bayhon", "Northville 3, Bayugo, Meycauayan, Bulacan", 12000, "Loyloy", "Password3!@#");
 
         SeeRegisteredAccounts();
@@ -369,14 +381,9 @@ public class Program{
                
             } else if(user_choice == "3"){
                 Console.Write("See you!");
+                break;
             }
 
         }
-
-
-
     }
 }
-
-
-// 

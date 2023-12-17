@@ -395,7 +395,7 @@ public class Program{
                         initial_deposit = Console.ReadLine();
                         // Check if initial deposit is valid (not a string or negative)
                         if(!Double.TryParse(initial_deposit, out initial_deposit_converted)){
-                            Console.Write("Please enter a valid amount.");
+                            Console.Write("Please enter a valid amount.\n");
                         } else{
                             if (initial_deposit_converted >= 500){
                                 break;

@@ -11,7 +11,7 @@ public class Program{
     // Create an empty linkedlistnode to store the logged in user.
     static LinkedListNode<String[]> current_user = null;
 
-    // Check for username and password in the bank_accounts.
+    // Set the current logged in user
     private static void SetCurrentUser(string[] data){
         for (LinkedListNode<string[]> node = bank_accounts.First; node != null; node=node.Next){
             if (node.Value == data){
@@ -20,13 +20,12 @@ public class Program{
             }
         }
     }
-
-    
+    //    0        1            2       3         4         5        6
+    // [bank_num, firstname, lastname, address, balance, username, password]
     // A function that checks if an account exists
     static bool IsAccountExisting(string username){
-        int uname_index = 5;
         foreach(String[] data in bank_accounts){
-            if (data[uname_index] == username || data[0] == username){
+            if (data[5] == username || data[0] == username){
                 return true;
             }
         }
@@ -53,10 +52,14 @@ public class Program{
     
     // Add a new user in the linkedlist 'bank_accounts' as a string of array
     static bool Register(string bank_num, string first, string last, string address, double deposit, string username, string password){
-        String[] bank_acc = {bank_num, first, last, address, deposit.ToString(), username, password};
-
-        bank_accounts.AddLast(bank_acc);
-        return true;
+        if (IsAccountExisting(username)){
+            return false;
+        }
+        else{
+            String[] bank_acc = {bank_num, first, last, address, deposit.ToString(), username, password};
+            bank_accounts.AddLast(bank_acc);
+            return true;
+        }
     }
 
     // Transfer fund through their bank account and add a transaction record
@@ -69,6 +72,7 @@ public class Program{
                 return true;
             }
         }
+
         return false;
     }
 
@@ -77,6 +81,9 @@ public class Program{
         string datestr = DateTime.Now.ToString("dddd, MMMM dd, yyyy - hh:mm:ss tt");
         string[] trans = {current_user.Value[0], "Withdraw", datestr, prev_bal, amt_withdrawn.ToString(), current_user.Value[4]};
         transactions.AddFirst(trans);
+
+        //    0        1            2       3         4         5        6
+        // [bank_num, firstname, lastname, address, balance, username, password]
     }
 
     // Add a transaction for deposit that requires previous balance and amount withdrawn
@@ -95,7 +102,11 @@ public class Program{
             }
         }
         return name;
+
+        //    0         1            2       3         4         5        6
+        // [bank_num, firstname, lastname, address, balance, username, password]
     }
+
 
     // Add a transaction for send transfer that requires previous balance, recipient, and amount withdrawn
     static void TransactionCreationTransfer(string prev_bal, string recipient, double amt_transferred){
@@ -271,6 +282,7 @@ public class Program{
                         Console.WriteLine($"Recipient Name: {NumToName(recipient)}\n\n");
                     }
                 }
+                Console.WriteLine("");
 
             } 
             // Show transaction
@@ -293,9 +305,6 @@ public class Program{
         // Register two accounts for testing
         Register("1230120313012", "Nino", "Dulay", "106 Ricabo St. Zamora, Meycauayan, Bulacan", 15000, "HoaxSnowden", "Password123");
         Register("1230120313052", "Loy", "Bayhon", "Northville 3, Bayugo, Meycauayan, Bulacan", 12000, "Loyloy", "Password3!@#");
-
-        // SeeRegisteredAccounts();
-
 
         Console.WriteLine("Welcome to Group 2 Banking System!");
         while(true){
@@ -340,6 +349,8 @@ public class Program{
                             }
                         } while (key != ConsoleKey.Enter);
 
+                    
+                    Console.WriteLine();
                     // Check if account exists
                     if(IsAccountExisting(username)){
                         // If account exists, then login and check for password
